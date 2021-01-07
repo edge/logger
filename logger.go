@@ -1,130 +1,79 @@
-// Edge Network
-// (c) 2019 Edge Network technologies Ltd.
-
 package logger
 
 import (
-	"github.com/sirupsen/logrus"
+	"fmt"
 )
 
-// Instance is a type alias for logrus.FieldLogger.
+// Handler instances output log entries.
+type Handler interface {
+	Log(e *Entry) error
+}
+
+// Instance of a logger.
 type Instance struct {
-	*logrus.Logger
-	uiHook uiHook
+	// Labels that all entries inherit.
+	Labels map[string]string
+	// MinSeverity specifies the minimum severity to qualify an entry for logging. If an entry is less severe than this, it won't be output.
+	MinSeverity Severity
+
+	h Handler
 }
 
-const (
-	PanicLevel = logrus.PanicLevel
-	FatalLevel = logrus.FatalLevel
-	ErrorLevel = logrus.ErrorLevel
-	WarnLevel  = logrus.WarnLevel
-	InfoLevel  = logrus.InfoLevel
-	DebugLevel = logrus.DebugLevel
-)
+// New logger instance. An optional Handler may be provided, otherwise the logger uses a StdoutHandler.
+func New(h ...Handler) *Instance {
+	if h == nil {
+		h = []Handler{NewStdoutHandler()}
+	}
+	l := &Instance{
+		Labels:      make(map[string]string, 0),
+		MinSeverity: Info,
 
-// LevelToInt maps logrus.Levels to an int value.
-var LevelToInt = map[uint16]logrus.Level{
-	0: DebugLevel,
-	1: InfoLevel,
-	2: WarnLevel,
-	3: ErrorLevel,
-	4: FatalLevel,
-	5: PanicLevel,
+		h: h[0],
+	}
+	return l
 }
 
-// GetLevelsFromInt returns levels from an integer rating.
-func GetLevelsFromInt(l uint16) (levels []logrus.Level) {
-	for i, _ := range LevelToInt {
-		if i >= l {
-			levels = append(levels, LevelToInt[i])
-		}
+// Context for a new log entry. De facto entry constructor.
+func (l *Instance) Context(c string) (e *Entry) {
+	e = &Entry{
+		Context: c,
+		Labels:  make(map[string]string, 0),
+		l:       l,
+	}
+	// copy default labels to entry
+	for k, v := range l.Labels {
+		e.Labels[k] = v
 	}
 	return
 }
 
-// GetLevelsFromLevel returns levels from a logrus.Level.
-func GetLevelsFromLevel(l logrus.Level) []logrus.Level {
-	for i, level := range LevelToInt {
-		if level == l {
-			return GetLevelsFromInt(i)
-		}
+// GetMinSeverity returns a text label representing MinSeverity.
+func (l *Instance) GetMinSeverity() string {
+	if textSeverity, ok := severityIntToText(l.MinSeverity); ok {
+		return textSeverity
 	}
-
-	// default to all levels.
-	return logrus.AllLevels
+	return ""
 }
 
-// DefaultLogger is the default logger instance, calls to Context() etc are forwarded to this instance.
-var DefaultLogger *Instance
-
-func init() {
-	DefaultLogger = New()
+// Label adds a label that all entries inherit.
+func (l *Instance) Label(k, v string) {
+	l.Labels[k] = v
 }
 
-// New returns a new Logger Instance.
-func New() *Instance {
-	l := logrus.New()
-	customFormatter := &logrus.TextFormatter{
-		DisableColors:   false,
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
+// Log an entry to output.
+func (l *Instance) Log(e *Entry) {
+	if e.Severity > l.MinSeverity {
+		return
 	}
-	l.SetFormatter(customFormatter)
-	i := &Instance{
-		Logger: l,
-		uiHook: uiHook{
-			uiData: make(map[string]interface{}),
-		},
+	l.h.Log(e)
+}
+
+// SetMinSeverity parses a text label to replace MinSeverity. If an invalid label is given, an error will be returned with no side effects.
+func (l *Instance) SetMinSeverity(textSeverity string) error {
+	s, ok := severityTextToInt(textSeverity)
+	if !ok {
+		return fmt.Errorf("Invalid severity \"%s\", keeping current value \"%s\"", textSeverity, l.GetMinSeverity())
 	}
-
-	// Add ui hook.
-	i.AddHook(i.uiHook)
-	return i
-}
-
-// Context adds field context to logs.
-func (i *Instance) Context(c string) *logrus.Entry {
-	return i.WithFields(logrus.Fields{
-		"context": c,
-	})
-}
-
-// Context adds field context to logs.
-func Context(c string) *logrus.Entry {
-	return DefaultLogger.WithFields(logrus.Fields{
-		"context": c,
-	})
-}
-
-// SetLogLevel sets the level of logging.
-func (i *Instance) SetLogLevel(level string) {
-	switch level {
-	case "panic":
-		i.SetLevel(logrus.PanicLevel)
-	case "fatal":
-		i.SetLevel(logrus.FatalLevel)
-	case "error":
-		i.SetLevel(logrus.ErrorLevel)
-	case "warn":
-		i.SetLevel(logrus.WarnLevel)
-	case "info":
-		i.SetLevel(logrus.InfoLevel)
-	case "debug":
-		i.SetLevel(logrus.DebugLevel)
-	}
-}
-
-// SetLogLevel sets the level of logging.
-func SetLogLevel(level string) {
-	DefaultLogger.SetLogLevel(level)
-}
-
-// AddLogUI adds a log UI.
-func AddLogUI(key string, value interface{}) {
-	DefaultLogger.AddLogUI(key, value)
-}
-
-// AddLogUI adds a log UI.
-func (i *Instance) AddLogUI(key string, value interface{}) {
-	i.uiHook.uiData[key] = value
+	l.MinSeverity = s
+	return nil
 }
