@@ -81,11 +81,12 @@ func (l *Instance) Log(e *Entry) {
 	l.h.Log(e)
 }
 
-// SetLabel configures a label that all entries inherit.
-func (l *Instance) SetLabel(k, v string) {
+// SetLabel configures a label that all entries inherit. The same instance is returned.
+func (l *Instance) SetLabel(k, v string) *Instance {
 	l.m.Lock()
 	defer l.m.Unlock()
 	l.labels[k] = v
+	return l
 }
 
 // SetMinSeverity parses a text label to replace MinSeverity. If an invalid label is given, an error will be returned with no side effects.
