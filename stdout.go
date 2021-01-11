@@ -2,6 +2,8 @@ package logger
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 )
@@ -17,6 +19,9 @@ type StdoutHandler struct {
 	format string
 
 	timeLayout string
+
+	stderr *log.Logger
+	stdout *log.Logger
 }
 
 // NewStdoutHandler creates a new StdoutHandler.
@@ -24,12 +29,20 @@ func NewStdoutHandler() *StdoutHandler {
 	return &StdoutHandler{
 		format:     "%[1]s[%[2]s] %[5]s context=%[3]s %[4]s",
 		timeLayout: time.RFC3339Nano,
+
+		stderr: log.New(os.Stderr, "", 0),
+		stdout: log.New(os.Stdout, "", 0),
 	}
 }
 
 // Log an entry to stdout/stderr.
 func (s *StdoutHandler) Log(e *Entry) error {
-	fmt.Println(s.formatEntry(e))
+	line := s.formatEntry(e)
+	if e.Severity <= Error {
+		s.stderr.Println(line)
+	} else {
+		s.stdout.Println(line)
+	}
 	return nil
 }
 
