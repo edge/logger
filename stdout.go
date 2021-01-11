@@ -22,7 +22,7 @@ type StdoutHandler struct {
 // NewStdoutHandler creates a new StdoutHandler.
 func NewStdoutHandler() *StdoutHandler {
 	return &StdoutHandler{
-		format:     "%[1]s[%[2]s] %[4]s context=%[3]s %[5]s",
+		format:     "%[1]s[%[2]s] %[5]s context=%[3]s %[4]s",
 		timeLayout: time.RFC3339Nano,
 	}
 }
