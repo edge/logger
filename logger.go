@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"sync"
 )
 
 // Handler instances output log entries.
@@ -11,12 +12,14 @@ type Handler interface {
 
 // Instance of a logger.
 type Instance struct {
-	// Labels that all entries inherit.
-	Labels map[string]string
 	// MinSeverity specifies the minimum severity to qualify an entry for logging. If an entry is less severe than this, it won't be output.
 	MinSeverity Severity
 
+	// Labels that all entries inherit.
+	labels map[string]string
+
 	h Handler
+	m *sync.RWMutex
 }
 
 // New logger instance. An optional Handler may be provided, otherwise the logger uses a StdoutHandler.
@@ -25,10 +28,12 @@ func New(h ...Handler) *Instance {
 		h = []Handler{NewStdoutHandler()}
 	}
 	l := &Instance{
-		Labels:      make(map[string]string, 0),
 		MinSeverity: Info,
 
+		labels: make(map[string]string, 0),
+
 		h: h[0],
+		m: &sync.RWMutex{},
 	}
 	return l
 }
@@ -41,10 +46,23 @@ func (l *Instance) Context(c string) (e *Entry) {
 		l:       l,
 	}
 	// copy default labels to entry
-	for k, v := range l.Labels {
+	for k, v := range l.GetLabels() {
 		e.Labels[k] = v
 	}
+
 	return
+}
+
+// GetLabels returns all the labels configured on this logger.
+func (l *Instance) GetLabels() map[string]string {
+	l.m.Lock()
+	defer l.m.Unlock()
+
+	labels := map[string]string{}
+	for k, v := range l.labels {
+		labels[k] = v
+	}
+	return labels
 }
 
 // GetMinSeverity returns a text label representing MinSeverity.
@@ -55,17 +73,19 @@ func (l *Instance) GetMinSeverity() string {
 	return ""
 }
 
-// Label adds a label that all entries inherit.
-func (l *Instance) Label(k, v string) {
-	l.Labels[k] = v
-}
-
 // Log an entry to output.
 func (l *Instance) Log(e *Entry) {
 	if e.Severity > l.MinSeverity {
 		return
 	}
 	l.h.Log(e)
+}
+
+// SetLabel configures a label that all entries inherit.
+func (l *Instance) SetLabel(k, v string) {
+	l.m.Lock()
+	defer l.m.Unlock()
+	l.labels[k] = v
 }
 
 // SetMinSeverity parses a text label to replace MinSeverity. If an invalid label is given, an error will be returned with no side effects.
