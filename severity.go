@@ -29,6 +29,18 @@ const (
 // Severity of a log entry is represented by a number where 0 is most severe (Fatal) and N is least.
 type Severity uint8
 
+// GetSeverities returns a dictionary of severity text labels indexed by their internal values.
+func GetSeverities() map[Severity]string {
+	return map[Severity]string{
+		Fatal: fatalText,
+		Error: errorText,
+		Warn:  warnText,
+		Info:  infoText,
+		Debug: debugText,
+		Trace: traceText,
+	}
+}
+
 func severityIntToText(s Severity) (text string, ok bool) {
 	ok = true
 	switch s {

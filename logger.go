@@ -13,6 +13,8 @@ type Handler interface {
 // Instance of a logger.
 type Instance struct {
 	// MinSeverity specifies the minimum severity to qualify an entry for logging. If an entry is less severe than this, it won't be output.
+	//
+	// The convenience functions GetMinSeverity() and SetMinSeverity() allow you to set this using a text label instead of integer value, and are recommended for long-term compatibility.
 	MinSeverity Severity
 
 	// Labels that all entries inherit.
@@ -30,7 +32,7 @@ func New(h ...Handler) *Instance {
 	l := &Instance{
 		MinSeverity: Info,
 
-		labels: make(map[string]string, 0),
+		labels: map[string]string{},
 
 		h: h[0],
 		m: &sync.RWMutex{},
@@ -42,7 +44,7 @@ func New(h ...Handler) *Instance {
 func (l *Instance) Context(c string) (e *Entry) {
 	e = &Entry{
 		Context: c,
-		Labels:  make(map[string]string, 0),
+		Labels:  map[string]string{},
 		l:       l,
 	}
 	// copy default labels to entry
