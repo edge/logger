@@ -7,26 +7,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TestHandler struct {
+type testHandler struct {
 	cb func(e *Entry)
 	s  *StdoutHandler
 }
 
-func NewTestHandler(cb func(e *Entry)) *TestHandler {
-	return &TestHandler{
+func newTestHandler(cb func(e *Entry)) *testHandler {
+	return &testHandler{
 		cb: cb,
 		s:  NewStdoutHandler(),
 	}
 }
 
-func (h *TestHandler) Log(e *Entry) error {
+func (h *testHandler) Log(e *Entry) error {
 	h.cb(e)
 	h.s.Log(e)
 	return nil
 }
 
-func NewWithTestHandler(cb func(e *Entry)) *Instance {
-	return New(NewTestHandler(cb))
+func newWithTestHandler(cb func(e *Entry)) *Instance {
+	return New(newTestHandler(cb))
 }
 
 func Test_Logger_Context(t *testing.T) {
@@ -63,7 +63,7 @@ func Test_Logger_Log(t *testing.T) {
 	var l *Instance
 
 	// all tests at default severity, Info
-	l = NewWithTestHandler(func(e *Entry) {
+	l = newWithTestHandler(func(e *Entry) {
 		a.Equal("test", e.Context)
 		for k, v := range e.Labels {
 			a.Equal("hello", k)
@@ -78,7 +78,7 @@ func Test_Logger_Log(t *testing.T) {
 	// simple checks for all severities
 	for i, textSeverity := range GetSeverities() {
 		// check severity value is correct
-		l = NewWithTestHandler(func(e *Entry) {
+		l = newWithTestHandler(func(e *Entry) {
 			a.Equal(i, e.Severity)
 		})
 		l.SetMinSeverity(textSeverity)
@@ -87,7 +87,7 @@ func Test_Logger_Log(t *testing.T) {
 
 		// check that output is blocked if insufficiently severe. skip FATAL as it cannot be blocked
 		if i > 0 {
-			l = NewWithTestHandler(func(e *Entry) {
+			l = newWithTestHandler(func(e *Entry) {
 				a.Failf("Unexpected logging", "Entry with severity \"%s\" should not be output", textSeverity)
 			})
 			l.MinSeverity = i - 1
