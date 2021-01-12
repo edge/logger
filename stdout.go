@@ -10,14 +10,6 @@ import (
 
 // StdoutHandler is a logger handler that outputs to stdout/stderr.
 type StdoutHandler struct {
-	// format will be used in fmt.Sprintf() and is provided the following replacement strings:
-	// 1. severity text flag e.g. ERROR, INFO
-	// 2. timestamp
-	// 3. context
-	// 4. labels in key1=value key2=value format
-	// 5. message
-	format string
-
 	timeLayout string
 
 	stderr *log.Logger
@@ -27,8 +19,7 @@ type StdoutHandler struct {
 // NewStdoutHandler creates a new StdoutHandler.
 func NewStdoutHandler() *StdoutHandler {
 	return &StdoutHandler{
-		format:     "%[1]s[%[2]s] %[5]s context=%[3]s %[4]s",
-		timeLayout: time.RFC3339Nano,
+		timeLayout: "2006-01-02 15:04:05.000 -0700 MST",
 
 		stderr: log.New(os.Stderr, "", 0),
 		stdout: log.New(os.Stdout, "", 0),
@@ -48,11 +39,11 @@ func (s *StdoutHandler) Log(e *Entry) error {
 
 func (s *StdoutHandler) formatEntry(e *Entry) string {
 	labels := s.formatLabels(e)
-	logTime := time.Now().UTC().Format(s.timeLayout)
+	logTime := time.Now().Format(s.timeLayout)
 	message := s.formatMessage(e)
 	textSeverity, _ := severityIntToText(e.Severity)
-	return fmt.Sprintf(s.format,
-		textSeverity,
+	return fmt.Sprintf("%[2]s %- 7[1]s %[3]s [%[4]s]: %[5]s",
+		fmt.Sprintf("[%s]", textSeverity),
 		logTime,
 		e.Context,
 		labels,
