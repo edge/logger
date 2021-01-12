@@ -17,8 +17,9 @@ type Instance struct {
 	// The convenience functions GetMinSeverity() and SetMinSeverity() allow you to set this using a text label instead of integer value, and are recommended for long-term compatibility.
 	MinSeverity Severity
 
-	// Labels that all entries inherit.
-	labels map[string]string
+	// Labels that all entries inherit. A dynamic label is calculated each time an entry is created and may be useful for logging changeable state data.
+	dynamicLabels map[string]func() string
+	labels        map[string]string
 
 	h Handler
 	m *sync.RWMutex
@@ -32,7 +33,8 @@ func New(h ...Handler) *Instance {
 	l := &Instance{
 		MinSeverity: Info,
 
-		labels: map[string]string{},
+		dynamicLabels: map[string]func() string{},
+		labels:        map[string]string{},
 
 		h: h[0],
 		m: &sync.RWMutex{},
@@ -55,7 +57,7 @@ func (l *Instance) Context(c string) (e *Entry) {
 	return
 }
 
-// GetLabels returns all the labels configured on this logger.
+// GetLabels returns all the labels configured on this logger. This will also calculatre dynamic values.
 func (l *Instance) GetLabels() map[string]string {
 	l.m.Lock()
 	defer l.m.Unlock()
@@ -63,6 +65,9 @@ func (l *Instance) GetLabels() map[string]string {
 	labels := map[string]string{}
 	for k, v := range l.labels {
 		labels[k] = v
+	}
+	for k, f := range l.dynamicLabels {
+		labels[k] = f()
 	}
 	return labels
 }
@@ -81,6 +86,14 @@ func (l *Instance) Log(e *Entry) {
 		return
 	}
 	l.h.Log(e)
+}
+
+// SetDynamicLabel configures a label that is calculated for each entry when it is created (at which time instance labels are copied).
+func (l *Instance) SetDynamicLabel(k string, v func() string) *Instance {
+	l.m.Lock()
+	defer l.m.Unlock()
+	l.dynamicLabels[k] = v
+	return l
 }
 
 // SetLabel configures a label that all entries inherit. The same instance is returned.

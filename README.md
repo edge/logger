@@ -8,11 +8,17 @@ Basic usage is simple:
 package myapp
 
 import (
+  "fmt"
+
   "github.com/edge/logger"
 )
 
 func main() {
-  l := logger.New().SetLabel("app", "com.example.myapp")
+  n := 0
+  l := logger.New().SetLabel("app", "com.example.myapp").SetDynamicLabel("nr", func () string {
+    n++
+    return fmt.Sprintf("%d", n)
+  })
   go func() {
     l.Context("main.go_func").Info("Goroutine works")
   }()

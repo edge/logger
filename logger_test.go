@@ -46,6 +46,31 @@ func Test_Logger_Context(t *testing.T) {
 	}
 }
 
+func Test_Logger_DynamicLabel(t *testing.T) {
+	a := assert.New(t)
+
+	n := 0
+	l := newWithTestHandler(func(e *Entry) {
+		for k, v := range e.Labels {
+			a.Equal("dyn", k)
+			a.Equal(fmt.Sprintf("%d", n), v)
+		}
+	})
+	l.SetDynamicLabel("dyn", func() string {
+		n++
+		return fmt.Sprintf("%d", n)
+	})
+
+	x := 0
+	for {
+		x++
+		l.Context("test").Infof("dynamic log - should show dyn=%d", x)
+		if x == 10 {
+			break
+		}
+	}
+}
+
 func Test_Logger_Label(t *testing.T) {
 	a := assert.New(t)
 
