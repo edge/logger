@@ -72,6 +72,10 @@ func Test_Logger_Log(t *testing.T) {
 		a.Equal("MESSAGE", e.Message[0])
 		a.Equal(Info, e.Severity)
 	})
+	// assert info is default MinSeverity, else set manually for testing purposes
+	if !a.Equal(Info, l.MinSeverity) {
+		l.SetMinSeverity("INFO")
+	}
 	l.Context("test").Label("hello", "world").Info("MESSAGE")
 	l.Context("test").Label("hello", "world").Infof("%s%s", "MESS", "AGE")
 
@@ -86,7 +90,7 @@ func Test_Logger_Log(t *testing.T) {
 		logfWithSeverity(l.Context("test"), textSeverity, "%s%s", "MESS", "AGE")
 
 		// check that output is blocked if insufficiently severe. skip FATAL as it cannot be blocked
-		if i > 0 {
+		if i > Fatal {
 			l = newWithTestHandler(func(e *Entry) {
 				a.Failf("Unexpected logging", "Entry with severity \"%s\" should not be output", textSeverity)
 			})
