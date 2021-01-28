@@ -21,7 +21,13 @@ func Context(c string) (e *Entry) {
 
 // Printf logs an INFO entry.
 //
-// Provided for compatibility with bigcache.Logger.
+// Provided for compatibility with bigcache.Logger and likely other interfaces.
 func (l *Instance) Printf(format string, v ...interface{}) {
 	l.Context("Printf").Infof(format, v...)
+}
+
+// Println logs an INFO entry.
+// Provided for compatibility with promhttp.Logger and likely other interfaces.
+func (l *Instance) Println(v ...interface{}) {
+	l.Context("Println").Info(v)
 }
