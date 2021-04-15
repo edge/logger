@@ -5,6 +5,7 @@ import (
 	"sort"
 )
 
+// Labels stores all label instances.
 type Labels []*Label
 
 func (l Labels) Len() int           { return len(l) }
@@ -16,9 +17,10 @@ func (l *Labels) Sort() {
 	sort.Sort(l)
 }
 
+// Label stores the label key and value
 type Label struct {
 	k string
-	v interface{}
+	v interface{} // string, func() string
 }
 
 // Out outputs the label as a key=val string.
