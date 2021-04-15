@@ -2,28 +2,34 @@ package logger
 
 const (
 	// Fatal error/panic, not recoverable
-	Fatal     Severity = 0
-	fatalText string   = "FATAL"
+	Fatal      Severity = 0
+	fatalText  string   = "FATAL"
+	fatalColor uint16   = 31 // red
 
 	// Error encountered, possibly recoverable
-	Error     Severity = 1
-	errorText string   = "ERROR"
+	Error      Severity = 1
+	errorText  string   = "ERROR"
+	errorColor uint16   = 31 // red
 
 	// Warn of potential operating concerns or failure trajectory
-	Warn     Severity = 2
-	warnText string   = "WARN"
+	Warn      Severity = 2
+	warnText  string   = "WARN"
+	warnColor uint16   = 33 // yellow
 
 	// Info updates
-	Info     Severity = 3
-	infoText string   = "INFO"
+	Info      Severity = 3
+	infoText  string   = "INFO"
+	infoColor uint16   = 36 // blue
 
 	// Debug data. Solely used in development
-	Debug     Severity = 4
-	debugText string   = "DEBUG"
+	Debug      Severity = 4
+	debugText  string   = "DEBUG"
+	debugColor uint16   = 37 // grey
 
 	// Trace data. Solely used in development
-	Trace     Severity = 5
-	traceText string   = "TRACE"
+	Trace      Severity = 5
+	traceText  string   = "TRACE"
+	traceColor uint16   = 37 // grey
 )
 
 // Severity of a log entry is represented by a number where 0 is most severe (Fatal) and N is least.
@@ -38,6 +44,37 @@ func GetSeverities() map[Severity]string {
 		Info:  infoText,
 		Debug: debugText,
 		Trace: traceText,
+	}
+}
+
+// GetSeverityColors returns a dictionary of severity colors indexed by their internal values.
+func GetSeverityColors() map[Severity]uint16 {
+	return map[Severity]uint16{
+		Fatal: fatalColor,
+		Error: errorColor,
+		Warn:  warnColor,
+		Info:  infoColor,
+		Debug: debugColor,
+		Trace: traceColor,
+	}
+}
+
+func severityIntToColor(s Severity) uint16 {
+	switch s {
+	case Debug:
+		return debugColor
+	case Error:
+		return errorColor
+	case Fatal:
+		return fatalColor
+	case Info:
+		return infoColor
+	case Trace:
+		return traceColor
+	case Warn:
+		return warnColor
+	default:
+		return debugColor
 	}
 }
 

@@ -5,7 +5,7 @@ import "fmt"
 // Entry represents a single log entry.
 type Entry struct {
 	Context  string
-	Labels   map[string]string
+	Labels   *Labels
 	Severity Severity
 	Message  []interface{}
 
@@ -53,8 +53,17 @@ func (e *Entry) Infof(format string, args ...interface{}) {
 }
 
 // Label sets a label on the entry. The same entry is returned.
-func (e *Entry) Label(k, v string) *Entry {
-	e.Labels[k] = v
+func (e *Entry) Label(k string, v interface{}) *Entry {
+	for _, lbl := range *e.Labels {
+		if lbl.k == k {
+			lbl.v = v
+			goto SORT
+		}
+	}
+	// Insert new label
+	*e.Labels = append(*e.Labels, &Label{k, v})
+SORT:
+	e.Labels.Sort()
 	return e
 }
 

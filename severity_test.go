@@ -25,6 +25,22 @@ func Test_severityIntToText_NotOk(t *testing.T) {
 	}
 }
 
+func Test_severityIntToColor(t *testing.T) {
+	a := assert.New(t)
+	severities := GetSeverityColors()
+	for i, ta := range severities {
+		tc := severityIntToColor(i)
+		a.Equal(ta, tc)
+	}
+}
+
+func Test_severityIntToColor_NotOK(t *testing.T) {
+	a := assert.New(t)
+	textColor := severityIntToColor(6)
+	defaultColor := uint16(37) // grey
+	a.Equal(defaultColor, textColor, "Should default to 37 (grey)")
+}
+
 func Test_severityTextToInt(t *testing.T) {
 	a := assert.New(t)
 	severities := GetSeverities()

@@ -18,8 +18,7 @@ type Instance struct {
 	MinSeverity Severity
 
 	// Labels that all entries inherit. A dynamic label is calculated each time an entry is created and may be useful for logging changeable state data.
-	dynamicLabels map[string]func() string
-	labels        map[string]string
+	labels *Labels
 
 	h Handler
 	m *sync.RWMutex
@@ -32,12 +31,9 @@ func New(h ...Handler) *Instance {
 	}
 	l := &Instance{
 		MinSeverity: Info,
-
-		dynamicLabels: map[string]func() string{},
-		labels:        map[string]string{},
-
-		h: h[0],
-		m: &sync.RWMutex{},
+		labels:      &Labels{},
+		h:           h[0],
+		m:           &sync.RWMutex{},
 	}
 	return l
 }
@@ -46,30 +42,15 @@ func New(h ...Handler) *Instance {
 func (l *Instance) Context(c string) (e *Entry) {
 	e = &Entry{
 		Context: c,
-		Labels:  map[string]string{},
+		Labels:  l.labels,
 		l:       l,
 	}
 	// copy default labels to entry
-	for k, v := range l.GetLabels() {
-		e.Labels[k] = v
+	for _, lbl := range *l.labels {
+		e.Label(lbl.k, lbl.v)
 	}
 
 	return
-}
-
-// GetLabels returns all the labels configured on this logger. This will also calculatre dynamic values.
-func (l *Instance) GetLabels() map[string]string {
-	l.m.Lock()
-	defer l.m.Unlock()
-
-	labels := map[string]string{}
-	for k, v := range l.labels {
-		labels[k] = v
-	}
-	for k, f := range l.dynamicLabels {
-		labels[k] = f()
-	}
-	return labels
 }
 
 // GetMinSeverity returns a text label representing MinSeverity.
@@ -90,17 +71,24 @@ func (l *Instance) Log(e *Entry) {
 
 // SetDynamicLabel configures a label that is calculated for each entry when it is created (at which time instance labels are copied).
 func (l *Instance) SetDynamicLabel(k string, v func() string) *Instance {
-	l.m.Lock()
-	defer l.m.Unlock()
-	l.dynamicLabels[k] = v
-	return l
+	return l.SetLabel(k, v)
 }
 
 // SetLabel configures a label that all entries inherit. The same instance is returned.
-func (l *Instance) SetLabel(k, v string) *Instance {
+func (l *Instance) SetLabel(k string, v interface{}) *Instance {
 	l.m.Lock()
 	defer l.m.Unlock()
-	l.labels[k] = v
+	// Search for existing label and update
+	for _, lbl := range *l.labels {
+		if lbl.k == k {
+			lbl.v = v
+			goto SORT
+		}
+	}
+	// Insert new label
+	*l.labels = append(*l.labels, &Label{k, v})
+SORT:
+	l.labels.Sort()
 	return l
 }
 
