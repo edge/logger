@@ -63,7 +63,7 @@ func (l *Instance) GetMinSeverity() string {
 
 // Log an entry to output.
 func (l *Instance) Log(e *Entry) {
-	if e.Severity >= l.MinSeverity {
+	if e.Severity > l.MinSeverity {
 		return
 	}
 	l.h.Log(e)
